@@ -1,3 +1,4 @@
+#' @export
 ScreePlot = function(data, selection_count_tib, min_count, max_count, metric_1, metric_2){
   coefs_and_recon = map(min_count:max_count, \(c){
     tryCatch({

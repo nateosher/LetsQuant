@@ -1,3 +1,4 @@
+#' @export
 GetQuantletCoefficients = function(data_list, selected_quantlet_tib) {
   n = length(data_list)
   quantlet_coefs = vector('list', n)

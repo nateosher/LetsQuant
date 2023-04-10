@@ -1,9 +1,7 @@
-#' @import tibble
-#' @import gridExtra
 #' @export
 PlotQuantletMatrix = function(M) {
   n_quantlets = ncol(M)
-  quantlet_tibble = tibble(
+  quantlet_tibble = tibble::tibble(
     vals = as.numeric(M),
     p = rep(1:nrow(M) / (nrow(M) + 1), n_quantlets),
     labels = rep(paste("Q", 1:n_quantlets), each = nrow(M))
@@ -23,5 +21,5 @@ PlotQuantletMatrix = function(M) {
       theme_bw()
   })
 
-  do.call(grid.arrange, c(plot_list, nrow = n_rows))
+  do.call(gridExtra::grid.arrange, c(plot_list, nrow = n_rows))
 }

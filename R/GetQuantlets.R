@@ -1,8 +1,4 @@
-#' @import tibble
-#' @import magrittr
-#' @import dplyr
-#' @import purrr
-#' @import glmnet
+#' @importFrom magrittr `%>%`
 #' @export
 GetQuantlets = function(data_list, a = NULL, b = NULL, p_grid_final = NULL) {
   if(is.null(a))
@@ -12,11 +8,13 @@ GetQuantlets = function(data_list, a = NULL, b = NULL, p_grid_final = NULL) {
 
   n = length(data_list)
   lasso.list <- vector("list", n)
-  grid_tibble = tibble(a = c(0, 0),
+  grid_tibble = tibble::tibble(a = c(0, 0),
                        b = c(0, 1),
                        distribution = c("intercept", "normal")) %>%
-    bind_rows(tidyr::expand_grid(a, b) %>% mutate(distribution = "beta")) %>%
-    mutate(
+   dplyr::bind_rows(tidyr::expand_grid(a, b) %>%
+                      dplyr::mutate(distribution = "beta")
+                    ) %>%
+    dplyr::mutate(
       selection_counts = 0,
       index = 1:nrow(.)
     )
@@ -58,7 +56,7 @@ GetQuantlets = function(data_list, a = NULL, b = NULL, p_grid_final = NULL) {
 
   grid_tibble = grid_tibble %>%
     mutate(
-      p_grids = group_map(grid_tibble %>% group_by(index), \(x, y){
+      p_grids = dplyr::group_map(grid_tibble %>% group_by(index), \(x, y){
         # browser()
         if(x$distribution == 'beta')
           return(GENERATE_BETA_CDF(x$a, x$b, p_grid_final, TRUE))
