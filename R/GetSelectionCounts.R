@@ -18,12 +18,13 @@ GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
       selection_counts = 0
     )
 
-  for (i in 1:n) {
+  for(i in 1:n) {
     if(progress)
       ProgressBar(i, n)
+
     y = data_list[[i]]
     n_i = length(y)
-    p_grid = seq(1 / (n_i + 1), n_i / (n_i + 1), 1 / (n_i + 1))
+    p_grid = (1:n_i)/(n_i + 1)
 
     beta_cdf_grid_matrix = GENERATE_BETA_CDF_GRID(a, b, p_grid)
 
@@ -46,34 +47,13 @@ GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
   }
   if(progress)
     ProgressBar(n + 1, n)
-  # browser()
+
+
   selection_table = lasso.list %>% unlist() %>% table()
   cdf_indices = (selection_table %>% names() %>% as.numeric())
   selection_counts = selection_table %>% unname() %>% as.numeric()
 
   grid_tibble$selection_counts[cdf_indices] = selection_counts
-  # if(is.null(p_grid_final))
-  #   p_grid_final = (1:1024)/1025
-  #
-  # grid_tibble = grid_tibble %>%
-  #   mutate(
-  #     p_grids = dplyr::group_map(grid_tibble %>% group_by(index), \(x, y){
-  #       # browser()
-  #       if(x$distribution == 'beta')
-  #         return(GENERATE_BETA_CDF(x$a, x$b, p_grid_final, TRUE))
-  #       else if(x$distribution == 'intercept')
-  #         return(rep(1, length(p_grid_final)))
-  #       else{
-  #         std_norm_cdf_grid = qnorm(p_grid_final, x$a, x$b)
-  #         normalized_std_norm_cdf_grid = (std_norm_cdf_grid - mean(std_norm_cdf_grid)) /
-  #         sd(std_norm_cdf_grid)
-  #         return(normalized_std_norm_cdf_grid)
-  #       }
-  #     })
-  #   ) %>%
-  #   ungroup() %>%
-  #   select(-index)
-
 
   return(grid_tibble)
 }
