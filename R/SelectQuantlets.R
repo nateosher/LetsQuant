@@ -1,4 +1,6 @@
 #' @importFrom magrittr `%>%`
+#' @importFrom dplyr filter pull mutate arrange desc
+#' @importFrom purrr map2_dbl
 #' @export
 SelectQuantlets = function(selection_counts, selection_count_cutoff,
                          grid_size = NULL, orthogonalize = TRUE,
@@ -7,7 +9,7 @@ SelectQuantlets = function(selection_counts, selection_count_cutoff,
     grid_size = 1024
 
   intercept_included = "intercept" %in% (selection_counts %>%
-                                           dplyr::filter(
+                                           filter(
                                              selection_counts >= selection_count_cutoff
                                            ) %>%
                                            pull(distribution)
@@ -23,8 +25,8 @@ SelectQuantlets = function(selection_counts, selection_count_cutoff,
       )
 
   quantlet_mat = selection_counts %>%
-    dplyr::filter(selection_counts >= selection_count_cutoff) %>%
-    dplyr::arrange(dplyr::desc(selection_counts)) %>%
+    filter(selection_counts >= selection_count_cutoff) %>%
+    arrange(desc(selection_counts)) %>%
     MakeCDFGrids(grid_size = grid_size) %>%
     do.call(what = rbind) %>%
     t()

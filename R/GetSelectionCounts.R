@@ -1,4 +1,7 @@
 #' @importFrom magrittr `%>%`
+#' @importFrom tibble tibble
+#' @importFrom tidyr expand_grid
+#' @importFrom dplyr bind_rows mutate
 #' @export
 GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
   if(is.null(a))
@@ -8,13 +11,13 @@ GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
 
   n = length(data_list)
   lasso.list = vector("list", n)
-  grid_tibble = tibble::tibble(a = c(0, 0),
+  grid_tibble = tibble(a = c(0, 0),
                        b = c(0, 1),
                        distribution = c("intercept", "normal")) %>%
-   dplyr::bind_rows(tidyr::expand_grid(a, b) %>%
-                      dplyr::mutate(distribution = "beta")
-                    ) %>%
-    dplyr::mutate(
+   bind_rows(expand_grid(a, b) %>%
+              mutate(distribution = "beta")
+            ) %>%
+    mutate(
       selection_counts = 0
     )
 
@@ -47,7 +50,6 @@ GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
   }
   if(progress)
     ProgressBar(n + 1, n)
-
 
   selection_table = lasso.list %>% unlist() %>% table()
   cdf_indices = (selection_table %>% names() %>% as.numeric())
