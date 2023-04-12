@@ -21,12 +21,13 @@ GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
       selection_counts = 0
     )
 
-  for (i in 1:n) {
+  for(i in 1:n) {
     if(progress)
       ProgressBar(i, n)
+
     y = data_list[[i]]
     n_i = length(y)
-    p_grid = seq(1 / (n_i + 1), n_i / (n_i + 1), 1 / (n_i + 1))
+    p_grid = (1:n_i)/(n_i + 1)
 
     beta_cdf_grid_matrix = GENERATE_BETA_CDF_GRID(a, b, p_grid)
 
