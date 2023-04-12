@@ -1,5 +1,5 @@
 set.seed(11223344)
-ex_data = map(1:30, \(i){
+ex_data = purrr::map(1:30, \(i){
   n_obs = sample(100:150, 1)
   rgamma(n_obs, runif(1, 2, 10), runif(1, 2, 10)) %>%
     sort()
