@@ -1,5 +1,8 @@
+#' @importFrom tidyr expand_grid
+#' @importFrom dplyr mutate
+#' @importFrom purrr map2
 GENERATE_BETA_CDF_GRID <- function(alpha_vec, beta_vec, p_grid, center_and_scale = TRUE) {
-  cdf_tibble = tidyr::expand_grid(alpha_vec, beta_vec) %>%
+  cdf_tibble = expand_grid(alpha_vec, beta_vec) %>%
     mutate(centered_cdf_values = map2(alpha_vec, beta_vec, \(a, b){
       GENERATE_BETA_CDF(a, b, p_grid, center_and_scale)
     })

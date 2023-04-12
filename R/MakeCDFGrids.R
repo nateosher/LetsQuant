@@ -1,3 +1,5 @@
+#' @importFrom dplyr mutate group_by group_map
+#' @importFrom magrittr `%>%`
 #' @export
 MakeCDFGrids = function(selection_counts, grid_size){
   p_grid = (1:grid_size)/(grid_size + 1)
@@ -5,7 +7,7 @@ MakeCDFGrids = function(selection_counts, grid_size){
   selection_counts %>%
     mutate(index = 1:n()) %>%
     group_by(index) %>%
-    dplyr::group_map(\(x, y){
+    group_map(\(x, y){
       if(x$distribution == 'beta')
         return(GENERATE_BETA_CDF(x$a, x$b, p_grid, TRUE))
       else if(x$distribution == 'intercept')

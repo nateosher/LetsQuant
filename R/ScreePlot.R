@@ -1,3 +1,6 @@
+#' @import ggplot2
+#' @importFrom purrr map map2_dbl map_dbl
+#' @importFrom tibble tibble
 #' @export
 ScreePlot = function(data, selection_count_tib, min_count, max_count,
                      metric_1, metric_2, grid_size = NULL){

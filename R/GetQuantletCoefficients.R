@@ -1,3 +1,4 @@
+#' @importFrom purrr map_dbl map
 #' @export
 GetQuantletCoefficients = function(data_list, quantlet_matrix, progress = FALSE) {
   n = length(data_list)

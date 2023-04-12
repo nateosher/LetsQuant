@@ -1,7 +1,10 @@
+#' @import ggplot2
+#' @importFrom tibble tibble
+#' @importFrom purrr map
 #' @export
 PlotQuantletMatrix = function(M) {
   n_quantlets = ncol(M)
-  quantlet_tibble = tibble::tibble(
+  quantlet_tibble = tibble(
     vals = as.numeric(M),
     p = rep(1:nrow(M) / (nrow(M) + 1), n_quantlets),
     labels = rep(paste("Q", 1:n_quantlets), each = nrow(M))
