@@ -40,7 +40,7 @@ ex_data = map(1:30, \(i){
 
 Note the data structure being used here is quite simple- it is just a list where each entry is a numeric vector sorted from smallest to largest. While in practice each entry in the list might represent a patient, image, etc., I'll refer to a numeric vector in this list as a "data entry." 
 
-The first step is to form an overcomplete "dictionary" of beta quantile functions, and see which ones are useful for modeling our actual data. This will take the most time of the entire pipeline, since it entails running a cross-validated Lasso for each entry of our data list. Each data list can "select" any number of quantlets that explain the variance of that particular entry, though in practice each will only select a small handful. We will then aggregate these selections across all data entries for each quantlet to assess which explain the most variance across all data entries; higher selection counts indicate more importance, and lower selection counts indicate less importance. 
+The first step is to form an overcomplete "dictionary" of beta CDF functions, and see which ones are useful for modeling our actual data. This will take the most time of the entire pipeline, since it entails running a cross-validated Lasso for each entry of our data list. Each data list can "select" any number of quantlets that explain the variance of that particular entry, though in practice each will only select a small handful. We will then aggregate these selections across all data entries for each quantlet to assess which explain the most variance across all data entries; higher selection counts indicate more importance, and lower selection counts indicate less importance. 
 
 ```{r}
 selection_count_tib = GetSelectionCounts(ex_data,
@@ -51,27 +51,27 @@ selection_count_tib = GetSelectionCounts(ex_data,
 glimpse(selection_count_tib)
 ```
 
-The result is a tibble with four columns: `a`, `b`, `distribution`, and `selection_counts`. The first three store information about the quantile function used; the final column is the selection count as previously described. 
+The result is a tibble with four columns: `a`, `b`, `distribution`, and `selection_counts`. The first three store information about the CDF function used; the final column is the selection count as previously described. 
 
-The goal of using a quantlet basis is to explain a lot of the variance using as small a number of quantlets as possible. So lets pick the top 7 to use as our basis. We can do this by passing the `selection_count_tib` to the `SelectQuantlets` function. The second argument determines the threshold at which a particular quantlet is included in the basis. If a quantlet is selected at least that many times, it is included in the basis.  
+The goal of using a quantlet basis is to explain as much of the variance using as small a number of quantlets as possible. So lets only use quantlets that were selected at least 8 times across all data entries. We can do this by passing the `selection_count_tib` to the `SelectQuantlets` function. The second argument determines the threshold at which a particular quantlet is included in the basis. If a quantlet is selected at least that many times, it is included in the basis.  
 
 ```{r}
-quantlet_matrix = SelectQuantlets(selection_count_tib, 6)
+quantlet_matrix = SelectQuantlets(selection_count_tib, 8)
 
 class(quantlet_matrix)
 dim(quantlet_matrix)
 ```
 
-The result is a matrix where each column represents a selected quantlet, and each entry in that column represents the corresponding quantile function evaluated on a grid between 0 and 1. The size of the grid defaults to 1,024, so each column is $Q(\frac{1}{1,025}), \dots, Q(\frac{1,024}{1,025})$ for a given quantile function. Except there's a small catch, which you'll notice if you actually plot the resulting quantlet basis:
+The result is a matrix where each column represents a selected quantlet, and each entry in that column represents the corresponding quantile function evaluated on a grid between 0 and 1. We can see from the dimensions of the result that 7 quantlets were selected at least 8 times each. As for the number of rows, the size of the grid defaults to 1,024, so each column is $Q(\frac{1}{1,025}), \dots, Q(\frac{1,024}{1,025})$ for a given quantile function.  Except there's a small catch, which you'll notice if you actually plot the resulting quantlet basis:
 
 ```{r}
 PlotQuantletMatrix(quantlet_matrix)
 ```
 
-These don't look like quantile functions. But this is just because `SelectQuantlets` automatically orthogonalizes the resulting basis, which is almost always desirable. But if you'd like to override this behavior, you can set the `orthogonalize` argument in `SelectQuantlets` to `FALSE`. 
+These don't look like CDFs. But this is just because `SelectQuantlets` automatically orthogonalizes the resulting basis, which is almost always desirable. But if you'd like to override this behavior, you can set the `orthogonalize` argument in `SelectQuantlets` to `FALSE`. 
 
 ```{r}
-unorthogonalized_quantlet_matrix = SelectQuantlets(selection_count_tib, 6, 
+unorthogonalized_quantlet_matrix = SelectQuantlets(selection_count_tib, 8, 
                                                    orthogonalize = FALSE)
 
 PlotQuantletMatrix(unorthogonalized_quantlet_matrix)
@@ -85,7 +85,7 @@ Finally, to get the quantlet coefficients for each data set, we can use the `Get
 quantlet_coefs = GetQuantletCoefficients(ex_data, quantlet_matrix)
 ```
 
-To see how the projected data compares to the actual data, we can get the projection by simply taking the product of the quantlet coefficients with the quantlet matrix. Here's how the first entry looks when projected:
+The result is a list where each entry is a numeric vector with length equal to the number of quantlets in the basis. Each entry corresponds to the data entry at that index, and represents the coefficients of the data in "quantlet space." Thus, in order to view the projected data, we can simply multiply these coefficients by the quantlet matrix we constructed eariler. More concretely, here's how the first entry looks when projected:
 
 ```{r}
 data_comparison = tibble(
@@ -103,7 +103,7 @@ ggplot(data_comparison) +
   theme_bw()
 ```
 
-This looks pretty good. However, you might be interested in a more rigorous assessment. After all, we chose the threshold of 6 somewhat arbitrarily- why not look at how different thresholds impact the "quality" of the projection?
+This looks pretty good. However, you might be interested in a more rigorous assessment. After all, we chose the threshold of 8 somewhat arbitrarily- why not look at how different thresholds impact the "quality" of the projection?
 
 That's the purpose of the `ScreePlot` function. If we pass it the real data and the selection count tibble, we can check the fidelity of the projections to the original data using whatever metric we're in. We specify a minimum selection threshold and a maximum threshold, as well as two summary metrics. `metric_1` determines how projections of a specific data are compared to the original data. A simple example would be to just look at the correlation between the projection and the original. 
 
