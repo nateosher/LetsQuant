@@ -26,11 +26,28 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
     })
   })
 
+  min_viable = map_dbl(projected_data, ~ length(.x)) %>%
+                (\(projection_lengths){
+                  min_count + min(which(projection_lengths > 0)) - 1
+                })
+
+  max_viable = map_dbl(projected_data, ~ length(.x)) %>%
+    (\(projection_lengths){
+      min_count + max(which(projection_lengths > 0)) - 1
+    })
+
+
+
+  message(paste0("Successfully generated quantlet coefficients ",
+                "for selection threshold range ",
+                min_viable, "-", max_viable))
+
   data_common_grid = SameLengthData(data, grid_size)
 
   # First, compute metric_1 on the "reconstructed"/"projected" data with actual
   # data
   metric_1_summary = map(projected_data, \(y_star_list){
+    if(is.null(y_star_list)) return(NA)
     map2_dbl(y_star_list, data_common_grid, \(y_star, y){
       metric_1(y_star, y)
     })
@@ -42,7 +59,8 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
   results_tib = tibble(
     `Selection threshold (>=)` = min_count:max_count,
     `Reconstruction Quality` = metric_2_summary
-  )
+  ) %>%
+    drop_na()
 
   ggplot(results_tib) +
     geom_point(aes(x = `Selection threshold (>=)`, y = `Reconstruction Quality`)) +
