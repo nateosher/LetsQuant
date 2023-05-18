@@ -5,7 +5,8 @@
 
 <!-- badges: start -->
 
-[![codecov](https://codecov.io/gh/nateosher/LetsQuant/branch/master/graph/badge.svg?token=JSLBGZJPDM)](https://codecov.io/gh/nateosher/LetsQuant)
+[![Codecov test
+coverage](https://codecov.io/gh/nateosher/LetsQuant/branch/master/graph/badge.svg)](https://app.codecov.io/gh/nateosher/LetsQuant?branch=master)
 <!-- badges: end -->
 
 The goal of LetsQuant is to …
