@@ -5,7 +5,8 @@
 #' @export
 new_QuantletBasis = function(raw_data_list,
                              a = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1)),
-                             b = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1))){
+                             b = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1)),
+                             progress = TRUE){
 
   check_qb_constructor_input(raw_data_list, a, b)
 
@@ -17,7 +18,7 @@ new_QuantletBasis = function(raw_data_list,
   }
 
   message("Constructing quantlet basis object...")
-  selection_counts = GetSelectionCounts(raw_data, a, b)
+  selection_counts = GetSelectionCounts(raw_data, a, b, progress = progress)
   message("Done")
 
   structure(

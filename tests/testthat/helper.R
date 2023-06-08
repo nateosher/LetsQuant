@@ -11,4 +11,4 @@ ex_data = purrr::map(1:30, \(i){
   ))
 })
 
-test_quantlet_basis = new_QuantletBasis(ex_data)
+test_quantlet_basis = new_QuantletBasis(ex_data, progress = FALSE)
