@@ -1,12 +1,15 @@
 #' @import ggplot2
 #' @importFrom purrr map map2_dbl map_dbl
 #' @importFrom tibble tibble
+#' @importFrom tidyr drop_na
 #' @export
 ScreePlot = function(data, selection_count_tib, min_count, max_count,
-                     metric_1, metric_2, grid_size = NULL){
+                     metric_1, metric_2, grid_size = NULL, ...){
+
+  additional_params = list(...)
+
   if(is.null(grid_size)){
-    grid_size = max(data %>% map_dbl(~length(.x)) %>% max(),
-                    1024)
+    grid_size = data %>% map_dbl(~length(.x)) %>% max()
   }
 
   # This is a list, where each entry is a list of the projected data using
@@ -62,11 +65,21 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
   ) %>%
     drop_na()
 
+  metric_1_name = substitute(metric_1)
+  if(!is.null(additional_params$metric_1_name)){
+    metric_1_name = additional_params$metric_1_name
+  }
+
+  metric_2_name = substitute(metric_2)
+  if(!is.null(additional_params$metric_2_name)){
+    metric_2_name = additional_params$metric_2_name
+  }
+
   ggplot(results_tib) +
     geom_point(aes(x = `Selection threshold (>=)`, y = `Reconstruction Quality`)) +
     geom_path(aes(x = `Selection threshold (>=)`, y = `Reconstruction Quality`)) +
     ggtitle("Quantile Reconstruction Quality by Selection threshold",
-            subtitle = paste0("Metric 1: ", substitute(metric_1), ", ",
-                              "Metric 2: ", substitute(metric_2))) +
+            subtitle = paste0("Metric 1: ", metric_1_name, ", ",
+                              "Metric 2: ", metric_2_name)) +
     theme_bw()
 }

@@ -1,4 +1,4 @@
-#' @importFrom dplyr mutate group_by group_map
+#' @importFrom dplyr mutate group_by group_map n
 #' @importFrom magrittr `%>%`
 #' @export
 MakeCDFGrids = function(selection_counts, grid_size){
