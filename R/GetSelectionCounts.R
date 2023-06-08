@@ -2,6 +2,7 @@
 #' @importFrom tibble tibble
 #' @importFrom tidyr expand_grid
 #' @importFrom dplyr bind_rows mutate
+#' @import progressr
 #' @export
 GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
   if(is.null(a))
