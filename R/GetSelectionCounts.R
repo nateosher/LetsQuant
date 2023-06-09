@@ -2,7 +2,6 @@
 #' @importFrom tibble tibble
 #' @importFrom tidyr expand_grid
 #' @importFrom dplyr bind_rows mutate
-#' @import progressr
 #' @export
 GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
   if(is.null(a))
@@ -22,45 +21,36 @@ GetSelectionCounts = function(data_list, a = NULL, b = NULL, progress = TRUE) {
       selection_counts = 0
     )
 
-  progressr::with_progress({
-    progressr::handlers(
-      list(
-        progressr::handler_progress(
-          format = ":spin :current/:total [:bar] :percent in :elapsed ETA: :eta"
-        )
-      )
-    )
+  for(i in 1:n) {
+    if(progress)
+      ProgressBar(i - 1, n)
 
-    prog = progressr::progressor(n)
+    y = data_list[[i]]
+    n_i = length(y)
+    p_grid = (1:n_i)/(n_i + 1)
 
-    for(i in 1:n) {
-      if(progress)
-        prog()
+    beta_cdf_grid_matrix = GENERATE_BETA_CDF_GRID(a, b, p_grid)
 
-      y = data_list[[i]]
-      n_i = length(y)
-      p_grid = (1:n_i)/(n_i + 1)
+    std_norm_cdf_grid = qnorm(p_grid, 0, 1)
+    normalized_std_norm_cdf_grid = (std_norm_cdf_grid - mean(std_norm_cdf_grid)) /
+                                    sd(std_norm_cdf_grid)
 
-      beta_cdf_grid_matrix = GENERATE_BETA_CDF_GRID(a, b, p_grid)
+    full_cdf_grid_matrix = cbind(normalized_std_norm_cdf_grid,
+                                  t(beta_cdf_grid_matrix))
 
-      std_norm_cdf_grid = qnorm(p_grid, 0, 1)
-      normalized_std_norm_cdf_grid = (std_norm_cdf_grid - mean(std_norm_cdf_grid)) /
-                                      sd(std_norm_cdf_grid)
+    lasso_fit = glmnet::glmnet(full_cdf_grid_matrix, y, intercept = TRUE)
+    cvfit.lasso = glmnet::cv.glmnet(full_cdf_grid_matrix, y,
+                                     intercept = TRUE, nfolds = 3)
 
-      full_cdf_grid_matrix = cbind(normalized_std_norm_cdf_grid,
-                                    t(beta_cdf_grid_matrix))
+    selected = coef(lasso_fit, s = cvfit.lasso$lambda.1se) %>%
+                (\(v) !(v == 0)) %>%
+                as.vector() %>%
+                which()
+    lasso.list[[i]] = selected
+  }
 
-      lasso_fit = glmnet::glmnet(full_cdf_grid_matrix, y, intercept = TRUE)
-      cvfit.lasso = glmnet::cv.glmnet(full_cdf_grid_matrix, y,
-                                       intercept = TRUE, nfolds = 3)
-
-      selected = coef(lasso_fit, s = cvfit.lasso$lambda.1se) %>%
-                  (\(v) !(v == 0)) %>%
-                  as.vector() %>%
-                  which()
-      lasso.list[[i]] = selected
-    }
-  })
+  if(progress)
+    ProgressBar(n + 1, n)
 
   selection_table = lasso.list %>% unlist() %>% table()
   cdf_indices = (selection_table %>% names() %>% as.numeric())

@@ -1,24 +1,12 @@
 #' @export
-QuantletRegression = function(qcoef_list, X, n_burn, n_sample){
+QuantletRegression = function(qcoef_list, X, n_burn, n_sample, progress = TRUE){
   Q_star = map(qcoef_list, ~ matrix(.x, nrow = 1)) %>%
     do.call(rbind, .)
 
-  progressr::with_progress({
-    progressr::handlers(
-      list(
-        progressr::handler_progress(
-          format = ":spin :current/:total (:message) [:bar] :percent in :elapsed ETA: :eta"
-        )
-      )
-    )
-
-    prog = progressr::progressor(steps = ncol(Q_star))
-
     reg_list = map(1:ncol(Q_star), \(i){
-      prog(message = paste0("Quantlet ", i, "..."))
+      if(progress) ProgressBar(i-1, ncol(Q_star))
       BayesianLM(Q_star[,i], X, n_burn, n_sample)
     })
-  })
 
   beta_samples = array(dim = c(ncol(X), ncol(Q_star),n_sample),
                        dimnames = list(colnames(X),

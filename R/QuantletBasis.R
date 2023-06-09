@@ -19,7 +19,6 @@ new_QuantletBasis = function(raw_data_list,
 
   message("Constructing quantlet basis object...")
   selection_counts = GetSelectionCounts(raw_data, a, b, progress = progress)
-  message("Done")
 
   structure(
     list(
