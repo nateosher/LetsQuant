@@ -1,5 +1,51 @@
 #' @export
-QuantletRegression = function(qcoef_list, X, n_burn, n_sample, progress = TRUE){
+QuantletRegression = function(qb, vars_to_use, n_burn, n_sample, progress = TRUE){
+  check_quantlet_regression_inputs(qb, vars_to_use)
+  formula_string = paste0(vars_to_use, collapse = " + ")
+  formula_string = paste0("dummy_outcome ~ ", formula_string, " - 1")
+  model_formula = as.formula(formula_string)
+  X = qb$metadata %>%
+    select(vars_to_use) %>%
+    mutate(dummy_outcome = 1) %>%
+    model.matrix(model_formula, .)
+
+  model_output = RunQuantletRegression(qb$current_qcoefs,
+                                       X,
+                                       n_burn,
+                                       n_sample,
+                                       progress)
+
+  structure(
+    list(
+      model_output = model_output,
+      variables = dimnames(X)[[2]],
+      n_burn = n_burn,
+      n_sample = n_sample,
+      quantlet_basis = qb$current_basis
+    ),
+    class = "QuantletRegression"
+  )
+}
+
+check_quantlet_regression_inputs = function(qb, vars_to_use){
+  if(is.null(qb$current_basis)){
+    stop("no basis generated - see `update_quantlet_basis` function")
+  }
+
+  if(is.null(qb$metadata)){
+    stop(paste0("metadata must be added in order to run quantlet regression; ",
+                "see `update_metadata` function for details."))
+  }
+
+  if(! all( vars_to_use %in% colnames(qb$metadata) ) ){
+    stop(paste0("certain variables present in `vars_to_use` not present in ",
+                "provided metadata"))
+  }
+}
+
+
+
+RunQuantletRegression = function(qcoef_list, X, n_burn, n_sample, progress = TRUE){
   Q_star = map(qcoef_list, ~ matrix(.x, nrow = 1)) %>%
     do.call(rbind, .)
 
@@ -7,6 +53,7 @@ QuantletRegression = function(qcoef_list, X, n_burn, n_sample, progress = TRUE){
       if(progress) ProgressBar(i-1, ncol(Q_star))
       BayesianLM(Q_star[,i], X, n_burn, n_sample)
     })
+    ProgressBar(ncol(Q_star) + 1, ncol(Q_star))
 
   beta_samples = array(dim = c(ncol(X), ncol(Q_star),n_sample),
                        dimnames = list(colnames(X),
@@ -27,3 +74,69 @@ QuantletRegression = function(qcoef_list, X, n_burn, n_sample, progress = TRUE){
     sigma_2_samples = sigma_2_samples
   ))
 }
+
+#' @export
+print.QuantletRegression = function(qr, ...){
+  cat("`QuantletRegressions` object\n")
+  cat(qr$n_burn, "burn-in samples,", qr$n_sample, "post burn-in samples\n")
+  cat("Variables used:", paste0(qr$variables, collapse = ", "), "\n")
+}
+
+#' @export
+plot.QuantletRegression = function(qr, coef_name, ...){
+  additional_params = list(...)
+
+  check_quantlet_regression_plot_inputs(qr, additional_params)
+
+  plot_type = additional_params$type
+
+  if(is.null(plot_type) || plot_type == "coef_fcn"){
+    fcn_samples = GetCoefFcnSamples(qr$quantlet_basis, qr$model_output)
+    lower = ifelse(is.null(additional_params$lower),
+                   0.025,
+                   additional_params$lower)
+
+    upper = ifelse(is.null(additional_params$upper),
+                   0.975,
+                   additional_params$upper)
+    PlotFcnSamples(fcn_samples,
+                   coef_name,
+                   lower, upper)
+  }
+}
+
+check_quantlet_regression_plot_inputs = function(qr, additional_params){
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

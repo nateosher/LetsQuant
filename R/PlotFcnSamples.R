@@ -1,6 +1,5 @@
 #' @import ggplot2
 #' @importFrom tibble tibble
-#' @export
 PlotFcnSamples = function(sample_array, coef_name, lower = 0.025, upper = 0.975){
   coef_index = which(dimnames(sample_array)[[1]] == coef_name)
 

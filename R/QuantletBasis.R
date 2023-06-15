@@ -4,11 +4,12 @@
 #' @importFrom tibble as_tibble
 #' @export
 new_QuantletBasis = function(raw_data_list,
+                             metadata = NULL,
                              a = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1)),
                              b = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1)),
                              progress = TRUE){
 
-  check_qb_constructor_input(raw_data_list, a, b)
+  check_qb_constructor_input(raw_data_list, metadata, a, b)
 
   id_list = NULL
   raw_data = raw_data_list
@@ -26,14 +27,16 @@ new_QuantletBasis = function(raw_data_list,
       selection_counts = selection_counts %>%
         filter(selection_counts > 0),
       ids = id_list,
+      metadata = metadata,
       current_basis = NULL,
+      current_qcoefs = NULL,
       current_cutoff = NULL
     ),
     class = "QuantletBasis"
   )
 }
 
-check_qb_constructor_input = function(raw_data, a, b){
+check_qb_constructor_input = function(raw_data, metadata, a, b){
   # Raw data checks
   if(length(raw_data) < 1){
     stop("raw data must have at least one entry")
@@ -76,12 +79,63 @@ check_qb_constructor_input = function(raw_data, a, b){
   if(!all_sorted)
     stop("all numeric vector entries must be sorted low -> high")
 
+  # Metadata
+  metadata_exists = !is.null(metadata)
+
+  if(metadata_exists){
+    check_metadata(raw_data, metadata)
+  }
+
   # a and b
   if(class(a) != "numeric" || class(b) != "numeric")
     stop("`a` and `b` parameters must both be numeric vectors")
 
   if(any(a <= 0 | b <= 0))
     stop("all entries of `a` and `b` must be strictly greater than 0")
+}
+
+check_metadata = function(raw_data, metadata){
+  # metadata should be either tibble or data frame
+  if(!("data.frame" %in% class(metadata)))
+    stop("metadata should be passed as a data.frame or tibble")
+
+  not_all_have_ids = raw_data %>%
+    map_lgl(~ (class(.x) != "list") || is.null(.x$id) ) %>%
+    any()
+
+  # check for ids in raw data
+  if(not_all_have_ids){
+    stop(paste0("in order to use metadata, each entry of raw data should ",
+                "be a ",
+                "list with `data` (numeric vector) attribute and `id` ",
+                "(string) attribute"))
+  }
+
+  # check for ids in metadata
+  if(! ("id" %in% colnames(metadata))){
+    stop(paste0("metadata must include `id` column"))
+  }
+
+  # check for congruence between ids
+  raw_data_ids = map_chr(raw_data, ~ .x$id)
+
+  # If there are no common ids, throw error
+  if(! any(raw_data_ids %in% metadata$id)){
+    stop("metadata and raw data have no common ids")
+  }
+
+  # If there are some ids not in the data, throw warning
+  if( any(!( raw_data_ids %in% metadata$id )) ){
+    warning(paste0("not all observations have corresponding entries ",
+                   "in metadata; these observations will not be ",
+                   "used in analyses."))
+  }
+
+  any_missing_metadata = (metadata %>% is.na() %>% sum()) > 0
+  if(any_missing_metadata){
+    warning(paste0("missing data are currently unsupported- observations ",
+                   "with missingness may be removed from analyses."))
+  }
 }
 
 #' @export
@@ -124,6 +178,7 @@ plot.QuantletBasis = function(qb, ...){
                   metric_2_name = original_call$metric_2)
   }
 }
+
 
 plot_qb_standard = function(qb){
 
@@ -185,6 +240,9 @@ update_quantlet_basis = function(qb, cutoff, grid_size = NULL,
                           grid_size = max_n_obs)
   qb$current_basis = basis
   qb$current_cutoff = cutoff
+  message("Computing new quantlet coefficients...")
+  qb$current_qcoefs = GetQuantletCoefficients(qb$raw_data, qb$current_basis,
+                                              progress = TRUE)
   return(qb)
 }
 
@@ -218,6 +276,13 @@ get_quantlet_coefficients = function(qb, normalize = FALSE){
       id = qb$id
     ) %>%
     select(id, everything())
+}
+
+#' @export
+update_metadata = function(qb, new_metadata){
+  check_metadata(new_metadata, qb$raw_data)
+  qb$metadata = new_metadata
+  return(qb)
 }
 
 
