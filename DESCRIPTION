@@ -16,7 +16,8 @@ Imports:
   ggplot2,
   tibble,
   pracma,
-  gridExtra
+  gridExtra,
+  RColorBrewer
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3

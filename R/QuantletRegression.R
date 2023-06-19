@@ -82,8 +82,9 @@ print.QuantletRegression = function(qr, ...){
   cat("Variables used:", paste0(qr$variables, collapse = ", "), "\n")
 }
 
+#' @importFrom RColorBrewer brewer.pal
 #' @export
-plot.QuantletRegression = function(qr, coef_name, ...){
+plot.QuantletRegression = function(qr, ...){
   additional_params = list(...)
 
   check_quantlet_regression_plot_inputs(qr, additional_params)
@@ -100,13 +101,50 @@ plot.QuantletRegression = function(qr, coef_name, ...){
                    0.975,
                    additional_params$upper)
     PlotFcnSamples(fcn_samples,
-                   coef_name,
+                   additional_params$coef_name,
                    lower, upper)
+  }else if(plot_type == "density"){
+    density_colors = RColorBrewer::brewer.pal(nrow(additional_params$coef_mat),
+                                              "PuBuGn") %>%
+                      suppressWarnings()
+
+    if(!is.null(additional_params$colors)){
+      density_colors = additional_params$colors
+    }
+
+    fcn_samples = GetCoefFcnSamples(qr$quantlet_basis, qr$model_output)
+
+    PlotDensities(fcn_samples,
+                  coef_mat = additional_params$coef_mat,
+                  colors = density_colors)
   }
 }
 
 check_quantlet_regression_plot_inputs = function(qr, additional_params){
+  if(is.null(additional_params$type) ||
+     additional_params$type == "coef_fcn"){
+    if(is.null(additional_params$coef_name)){
+      stop(paste0("please provide name of coefficient to plot via ",
+                  "the `coef_name` argument"))
+    }
+  }else if(additional_params$type == "density"){
+    if(is.null(additional_params$coef_mat))
+      stop("coefficient matrix must be provided")
 
+    if(nrow(additional_params$coef_mat) > 9 &&
+       is.null(additional_params$colors)){
+      stop(paste0("cannot generate default color palette with > 9 colors; ",
+                  "please provide a vector of colors via the `colors` ",
+                  "argument (1 per row of `coef_mat`)"))
+    }
+
+    if(!is.null(additional_params$colors) &&
+       nrow(additional_params$coef_mat) != length(colors)){
+      stop(paste0("`colors` vector must be the same length as ",
+                  "nrow(coef_mat)"))
+    }
+
+  }
 }
 
 
