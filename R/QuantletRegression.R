@@ -1,5 +1,4 @@
 #' @importFrom magrittr `%>%`
-#' @importFrom purrr quietly
 #' @export
 QuantletRegression = function(qb, vars_to_use, n_burn, n_sample,
                               progress = TRUE){
@@ -12,7 +11,7 @@ QuantletRegression = function(qb, vars_to_use, n_burn, n_sample,
     mutate(dummy_outcome = 1) %>%
     model.matrix(model_formula, .)
 
-  quiet_summarize = purrr::quietly(summarize)
+  quiet_summarize = purrr::quietly(dplyr::summarize)
 
   missing_data = qb$metadata %>%
     select(any_of(vars_to_use)) %>%
