@@ -1,4 +1,4 @@
-#' @importFrom purrr map_dbl map imap
+#' @importFrom purrr map_dbl imap
 GetQuantletCoefficients = function(data_list, quantlet_matrix, progress = FALSE) {
   n = length(data_list)
   quantlet_coefs = vector('list', n)
