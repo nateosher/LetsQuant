@@ -1,5 +1,8 @@
+#' @importFrom magrittr `%>%`
+#' @importFrom purrr quietly
 #' @export
-QuantletRegression = function(qb, vars_to_use, n_burn, n_sample, progress = TRUE){
+QuantletRegression = function(qb, vars_to_use, n_burn, n_sample,
+                              progress = TRUE){
   check_quantlet_regression_inputs(qb, vars_to_use)
   formula_string = paste0(vars_to_use, collapse = " + ")
   formula_string = paste0("dummy_outcome ~ ", formula_string, " - 1")
@@ -9,7 +12,15 @@ QuantletRegression = function(qb, vars_to_use, n_burn, n_sample, progress = TRUE
     mutate(dummy_outcome = 1) %>%
     model.matrix(model_formula, .)
 
-  model_output = RunQuantletRegression(qb$current_qcoefs,
+  quiet_summarize = purrr::quietly(summarize)
+
+  missing_data = qb$metadata %>%
+    select(any_of(vars_to_use)) %>%
+    quiet_summarize(across(.cols = everything(), ~ is.na(.x))) %>%
+    (\(x) x$result) %>%
+    purrr::reduce(`|`)
+
+  model_output = RunQuantletRegression(qb$current_qcoefs[!missing_data],
                                        X,
                                        n_burn,
                                        n_sample,
@@ -116,7 +127,8 @@ plot.QuantletRegression = function(qr, ...){
 
     PlotDensities(fcn_samples,
                   coef_mat = additional_params$coef_mat,
-                  colors = density_colors)
+                  colors = density_colors,
+                  span = additional_params$span)
   }
 }
 
@@ -139,7 +151,7 @@ check_quantlet_regression_plot_inputs = function(qr, additional_params){
     }
 
     if(!is.null(additional_params$colors) &&
-       nrow(additional_params$coef_mat) != length(colors)){
+       nrow(additional_params$coef_mat) != length(additional_params$colors)){
       stop(paste0("`colors` vector must be the same length as ",
                   "nrow(coef_mat)"))
     }

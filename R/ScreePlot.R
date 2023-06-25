@@ -15,11 +15,13 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
   # This is a list, where each entry is a list of the projected data using
   # the specified threshold for quantlet selection
   projected_data = map(min_count:max_count, \(c){
+    ProgressBar(c - min_count, max_count - min_count)
     tryCatch({
       quantlet_matrix = SelectQuantlets(selection_count_tib, c,
                                       grid_size = grid_size)
 
-      Q_star_list = GetQuantletCoefficients(data, quantlet_matrix)
+      Q_star_list = GetQuantletCoefficients(data, quantlet_matrix,
+                                            progress = FALSE)
 
       map(Q_star_list, \(Q_star){
         quantlet_matrix %*% Q_star
@@ -28,6 +30,8 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
       return(NULL)
     })
   })
+
+  ProgressBar(max_count - min_count + 1, max_count - min_count)
 
   min_viable = map_dbl(projected_data, ~ length(.x)) %>%
                 (\(projection_lengths){

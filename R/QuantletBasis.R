@@ -148,6 +148,11 @@ print.QuantletBasis = function(qb, ...){
     cat(ncol(qb$current_basis), "quantlets selected\n")
     cat("Grid size:", nrow(qb$current_basis), "\n")
   }
+  if(is.null(qb$metadata)){
+    cat("No attached metadata\n")
+  }else{
+    cat("Attached metadata with", ncol(qb$metadata), "columns\n")
+  }
 }
 
 #' @export
@@ -280,14 +285,79 @@ get_quantlet_coefficients = function(qb, normalize = FALSE){
 
 #' @export
 update_metadata = function(qb, new_metadata){
-  check_metadata(new_metadata, qb$raw_data)
+  check_metadata_update(qb, new_metadata)
   qb$metadata = new_metadata
   return(qb)
 }
 
+check_metadata_update = function(qb, metadata){
+  # metadata should be either tibble or data frame
+  if(!("data.frame" %in% class(metadata)))
+    stop("metadata should be passed as a data.frame or tibble")
 
+  # check for ids in raw data
+  if(is.null(qb$ids)){
+    stop(paste0("data must have ids to use metadata; see `update_ids` ",
+                "function"))
+  }
 
+  # check for ids in metadata
+  if(! ("id" %in% colnames(metadata))){
+    stop(paste0("metadata must include `id` column"))
+  }
 
+  # check for congruence between ids
+  raw_data_ids = qb$ids
+
+  # If there are no common ids, throw error
+  if(! any(raw_data_ids %in% metadata$id)){
+    stop("metadata and raw data have no common ids")
+  }
+
+  # If there are some ids not in the data, throw warning
+  if( any(!( raw_data_ids %in% metadata$id )) ){
+    warning(paste0("not all observations have corresponding entries ",
+                   "in metadata; these observations will not be ",
+                   "used in analyses."))
+  }
+
+  any_missing_metadata = (metadata %>% is.na() %>% sum()) > 0
+  if(any_missing_metadata){
+    warning(paste0("missing data are currently unsupported- observations ",
+                   "with missingness may be removed from analyses."))
+  }
+}
+
+#' @export
+update_ids = function(qb, new_ids){
+  check_new_ids(qb, new_ids)
+  qb$ids = new_ids
+  return(qb)
+}
+
+check_new_ids = function(qb, new_ids){
+  if(class(new_ids) != "character"){
+    stop(paste0("`new_ids` must be of class `character`"))
+  }
+  if(length(new_ids) != length(qb$raw_data)){
+    stop(paste0("vector of new ids must be the same length as ",
+                "data"))
+  }
+
+  if(!is.null(qb$metadata)){
+    # If there are no common ids, throw error
+    if(! any(new_ids %in% qb$metadata$id)){
+      stop("metadata and raw data have no common ids")
+    }
+
+    # If there are some ids not in the data, throw warning
+    if( any(!( new_ids %in% qb$metadata$id )) ){
+      warning(paste0("not all observations have corresponding entries ",
+                     "in metadata; these observations will not be ",
+                     "used in analyses."))
+    }
+  }
+}
 
 
 

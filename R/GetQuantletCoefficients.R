@@ -15,15 +15,15 @@ GetQuantletCoefficients = function(data_list, quantlet_matrix, progress = FALSE)
 
   data_list_common_grid = SameLengthData(data_list, p_grid_size)
 
-  quantlet_coefs = map(data_list_common_grid, \(y){
+  quantlet_coefs = imap(data_list_common_grid, \(y, i){
     gen_inv = solve(t(quantlet_matrix) %*% quantlet_matrix) %*% t(quantlet_matrix)
 
     Q_i_star = gen_inv %*% y
+    if(progress) ProgressBar(i, n)
     Q_i_star
   })
 
-  if(progress)
-    ProgressBar(n+1, n)
+  if(progress) ProgressBar(n+1, n)
 
   return(quantlet_coefs)
 }

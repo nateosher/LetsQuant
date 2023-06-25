@@ -1,5 +1,5 @@
 PlotDensities = function(sample_array, coef_mat, colors,
-                         p_grid_size = 100){
+                         span = NULL, p_grid_size = 100){
   n_samples = dim(sample_array)[3]
   p_grid_indices = seq(1, dim(sample_array)[2], length.out = p_grid_size) %>%
                     floor() %>% unique()
@@ -49,8 +49,18 @@ PlotDensities = function(sample_array, coef_mat, colors,
   )
 
   ggplot(plot_tib) +
-    geom_smooth(aes(x = x, y = y, group = setting, color = setting),
-                se = FALSE, method = 'loess', formula = 'y ~ x') +
+    {
+      if(!is.null(span)){
+        geom_smooth(aes(x = x, y = y, group = setting, color = setting),
+                    se = FALSE, method = 'loess', formula = 'y ~ x',
+                    linewidth = 0.5, span = span)
+      }else{
+        geom_smooth(aes(x = x, y = y, group = setting, color = setting),
+                    se = FALSE, method = 'loess', formula = 'y ~ x',
+                    linewidth = 0.5)
+      }
+
+    } +
     scale_color_manual(values = colors) +
     theme_bw()
 
