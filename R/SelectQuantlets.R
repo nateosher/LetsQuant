@@ -1,7 +1,6 @@
 #' @importFrom magrittr `%>%`
 #' @importFrom dplyr filter pull mutate arrange desc
 #' @importFrom purrr map2_dbl
-#' @export
 SelectQuantlets = function(selection_counts, selection_count_cutoff,
                          grid_size = NULL, orthogonalize = TRUE,
                          force_intercept = TRUE){

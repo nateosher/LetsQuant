@@ -1,7 +1,6 @@
 #' @import ggplot2
 #' @importFrom tibble tibble
 #' @importFrom purrr map
-#' @export
 PlotQuantletMatrix = function(M) {
   n_quantlets = ncol(M)
   quantlet_tibble = tibble(

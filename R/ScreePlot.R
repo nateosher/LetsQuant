@@ -1,22 +1,27 @@
 #' @import ggplot2
 #' @importFrom purrr map map2_dbl map_dbl
 #' @importFrom tibble tibble
+#' @importFrom tidyr drop_na
 #' @export
 ScreePlot = function(data, selection_count_tib, min_count, max_count,
-                     metric_1, metric_2, grid_size = NULL){
+                     metric_1, metric_2, grid_size = NULL, ...){
+
+  additional_params = list(...)
+
   if(is.null(grid_size)){
-    grid_size = max(data %>% map_dbl(~length(.x)) %>% max(),
-                    1024)
+    grid_size = data %>% map_dbl(~length(.x)) %>% max()
   }
 
   # This is a list, where each entry is a list of the projected data using
   # the specified threshold for quantlet selection
   projected_data = map(min_count:max_count, \(c){
+    ProgressBar(c - min_count, max_count - min_count)
     tryCatch({
       quantlet_matrix = SelectQuantlets(selection_count_tib, c,
                                       grid_size = grid_size)
 
-      Q_star_list = GetQuantletCoefficients(data, quantlet_matrix)
+      Q_star_list = GetQuantletCoefficients(data, quantlet_matrix,
+                                            progress = FALSE)
 
       map(Q_star_list, \(Q_star){
         quantlet_matrix %*% Q_star
@@ -25,6 +30,8 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
       return(NULL)
     })
   })
+
+  ProgressBar(max_count - min_count + 1, max_count - min_count)
 
   min_viable = map_dbl(projected_data, ~ length(.x)) %>%
                 (\(projection_lengths){
@@ -62,11 +69,21 @@ ScreePlot = function(data, selection_count_tib, min_count, max_count,
   ) %>%
     drop_na()
 
+  metric_1_name = substitute(metric_1)
+  if(!is.null(additional_params$metric_1_name)){
+    metric_1_name = additional_params$metric_1_name
+  }
+
+  metric_2_name = substitute(metric_2)
+  if(!is.null(additional_params$metric_2_name)){
+    metric_2_name = additional_params$metric_2_name
+  }
+
   ggplot(results_tib) +
     geom_point(aes(x = `Selection threshold (>=)`, y = `Reconstruction Quality`)) +
     geom_path(aes(x = `Selection threshold (>=)`, y = `Reconstruction Quality`)) +
     ggtitle("Quantile Reconstruction Quality by Selection threshold",
-            subtitle = paste0("Metric 1: ", substitute(metric_1), ", ",
-                              "Metric 2: ", substitute(metric_2))) +
+            subtitle = paste0("Metric 1: ", metric_1_name, ", ",
+                              "Metric 2: ", metric_2_name)) +
     theme_bw()
 }

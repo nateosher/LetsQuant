@@ -1,6 +1,5 @@
-#' @export
 PlotDensities = function(sample_array, coef_mat, colors,
-                         p_grid_size = 100){
+                         span = NULL, p_grid_size = 100){
   n_samples = dim(sample_array)[3]
   p_grid_indices = seq(1, dim(sample_array)[2], length.out = p_grid_size) %>%
                     floor() %>% unique()
@@ -33,7 +32,9 @@ PlotDensities = function(sample_array, coef_mat, colors,
                           ))
 
   for(i in 1:dim(quantile_function_samples)[3]){
-    density_samples[,,i] = (delta / (apply(quantile_function_samples[,,i], 1, diff) %>%
+    sample_slice_matrix = quantile_function_samples[,,i] %>%
+                    matrix(nrow = n_coefficient_settings)
+    density_samples[,,i] = (delta / (apply(sample_slice_matrix, 1, diff) %>%
                                       t())) %>%
                            apply(MARGIN = 1:2, FUN = \(x) max(x, 0))
   }
@@ -48,8 +49,18 @@ PlotDensities = function(sample_array, coef_mat, colors,
   )
 
   ggplot(plot_tib) +
-    geom_smooth(aes(x = x, y = y, group = setting, color = setting),
-                se = FALSE) +
+    {
+      if(!is.null(span)){
+        geom_smooth(aes(x = x, y = y, group = setting, color = setting),
+                    se = FALSE, method = 'loess', formula = 'y ~ x',
+                    linewidth = 0.5, span = span)
+      }else{
+        geom_smooth(aes(x = x, y = y, group = setting, color = setting),
+                    se = FALSE, method = 'loess', formula = 'y ~ x',
+                    linewidth = 0.5)
+      }
+
+    } +
     scale_color_manual(values = colors) +
     theme_bw()
 

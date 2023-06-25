@@ -1,4 +1,3 @@
-#' @export
 GetCoefFcnSamples = function(qmat, reg_output){
   qmt = t(qmat)
 
