@@ -3,20 +3,14 @@
 #' @importFrom magrittr `%>%` set_colnames
 #' @importFrom tibble as_tibble
 #' @export
-new_QuantletBasis = function(raw_data_list,
+new_QuantletBasis = function(raw_data,
+                             id_list = NULL,
                              metadata = NULL,
                              a = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1)),
                              b = c(seq(0.1, 1, by = 0.2), seq(2, 100, by = 1)),
                              progress = TRUE){
 
-  check_qb_constructor_input(raw_data_list, metadata, a, b)
-
-  id_list = NULL
-  raw_data = raw_data_list
-  if(class(raw_data[[1]]) == "list"){
-    id_list = map_chr(raw_data, ~ .x$id)
-    raw_data = map(raw_data_list, ~ .x$data)
-  }
+  check_qb_constructor_input(raw_data, id_list, metadata, a, b)
 
   message("Constructing quantlet basis object...")
   selection_counts = GetSelectionCounts(raw_data, a, b, progress = progress)
@@ -36,7 +30,11 @@ new_QuantletBasis = function(raw_data_list,
   )
 }
 
-check_qb_constructor_input = function(raw_data, metadata, a, b){
+check_qb_constructor_input = function(raw_data, id_list, metadata, a, b){
+  # id_list checks
+  if(!is.null(id_list) && length(id_list) != length(raw_data)){
+    stop("`id_list` must be same length of `raw_data` if both are passed")
+  }
   # Raw data checks
   if(length(raw_data) < 1){
     stop("raw data must have at least one entry")
@@ -47,25 +45,13 @@ check_qb_constructor_input = function(raw_data, metadata, a, b){
 
   not_all_numeric = raw_data %>%
     map_chr(~ class(.x)) %>%
-    (\(classes) classes != "numeric") %>%
+    (\(classes){
+      any(!(classes %in% c("numeric", "integer")))
+    }) %>%
     any()
 
-  not_all_have_ids = raw_data %>%
-    map_lgl(~ (class(.x) != "list") || is.null(.x$id) ) %>%
-    any()
-
-  not_all_have_data = raw_data %>%
-    map_lgl(~ class(.x) != "list" ||
-              is.null(.x$data) ) %>%
-    any()
-
-  improper_entry_structure = not_all_have_ids || not_all_have_data
-
-  if(not_all_numeric && improper_entry_structure){
-    stop(paste0("all `raw_data` list entries must be numeric vectors OR ",
-                "lists with `data` (numeric vector) attribute and `id` ",
-                "(string) attribute"))
-  }
+  if(not_all_numeric)
+    stop("all `raw_data` list entries must be numeric/integer vectors")
 
   all_sorted = raw_data %>%
     map(\(l){
@@ -73,8 +59,8 @@ check_qb_constructor_input = function(raw_data, metadata, a, b){
       else return(l)
     }) %>%
     map_lgl(~ is.unsorted(.x)) %>%
-    (\(unsorted_bools) !unsorted_bools) %>%
-    any()
+    any() %>%
+    (\(x) !x)
 
   if(!all_sorted)
     stop("all numeric vector entries must be sorted low -> high")
@@ -83,7 +69,7 @@ check_qb_constructor_input = function(raw_data, metadata, a, b){
   metadata_exists = !is.null(metadata)
 
   if(metadata_exists){
-    check_metadata(raw_data, metadata)
+    check_metadata(id_list, metadata)
   }
 
   # a and b
@@ -94,38 +80,28 @@ check_qb_constructor_input = function(raw_data, metadata, a, b){
     stop("all entries of `a` and `b` must be strictly greater than 0")
 }
 
-check_metadata = function(raw_data, metadata){
+check_metadata = function(id_list, metadata){
+  # if metadata is provided, ids should be too
+  if(is.null(id_list)){
+    stop(paste0("in order to use metadata, ids must be passed ",
+                "via the `id_list` argument"))
+  }
   # metadata should be either tibble or data frame
   if(!("data.frame" %in% class(metadata)))
     stop("metadata should be passed as a data.frame or tibble")
-
-  not_all_have_ids = raw_data %>%
-    map_lgl(~ (class(.x) != "list") || is.null(.x$id) ) %>%
-    any()
-
-  # check for ids in raw data
-  if(not_all_have_ids){
-    stop(paste0("in order to use metadata, each entry of raw data should ",
-                "be a ",
-                "list with `data` (numeric vector) attribute and `id` ",
-                "(string) attribute"))
-  }
 
   # check for ids in metadata
   if(! ("id" %in% colnames(metadata))){
     stop(paste0("metadata must include `id` column"))
   }
 
-  # check for congruence between ids
-  raw_data_ids = map_chr(raw_data, ~ .x$id)
-
   # If there are no common ids, throw error
-  if(! any(raw_data_ids %in% metadata$id)){
+  if(! any(id_list %in% metadata$id)){
     stop("metadata and raw data have no common ids")
   }
 
   # If there are some ids not in the data, throw warning
-  if( any(!( raw_data_ids %in% metadata$id )) ){
+  if( any(!( id_list %in% metadata$id )) ){
     warning(paste0("not all observations have corresponding entries ",
                    "in metadata; these observations will not be ",
                    "used in analyses."))
