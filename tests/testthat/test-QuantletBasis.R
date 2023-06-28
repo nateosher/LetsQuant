@@ -78,6 +78,12 @@ test_that("`new_QuantletBasis` catches malformed inputs", {
     "no common ids"
   )
 
+})
 
 
+test_that("`new_QuantletBasis` produces `QuantletBasis` object", {
+  expect_no_error({
+    qb_1 = new_QuantletBasis(ex_data, progress = TRUE)
+  })
+  expect_equal(class(qb_1), "QuantletBasis")
 })
