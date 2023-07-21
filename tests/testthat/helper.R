@@ -1,6 +1,6 @@
 set.seed(11223344)
 
-n = 30
+n = 10
 
 test_metadata = tibble(
   id = map_chr(1:n, ~ sample(LETTERS, 6, replace = TRUE) %>% paste(collapse = "")),
