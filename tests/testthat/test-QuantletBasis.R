@@ -83,7 +83,23 @@ test_that("`new_QuantletBasis` catches malformed inputs", {
 
 test_that("`new_QuantletBasis` produces `QuantletBasis` object", {
   expect_no_error({
-    qb_1 = new_QuantletBasis(ex_data, progress = TRUE)
+    qb_1 = new_QuantletBasis(ex_data)
   })
+
   expect_equal(class(qb_1), "QuantletBasis")
+
+  expect_no_error({
+    qb_2 = new_QuantletBasis(ex_data, id_list = test_metadata$id)
+  })
+
+  expect_false(is.null(qb_2$ids))
+
+  expect_no_error({
+    qb_3 = new_QuantletBasis(ex_data,
+                             id_list = test_metadata$id,
+                             metadata = test_metadata)
+  })
+
+  expect_false(is.null(qb_3$ids))
+  expect_false(is.null(qb_3$metadata))
 })
